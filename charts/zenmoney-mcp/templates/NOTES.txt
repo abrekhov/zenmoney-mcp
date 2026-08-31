@@ -1,0 +1,26 @@
+{{- if .Values.ingress.enabled }}
+Your zenmoney-mcp server should be available at:
+
+  {{- if .Values.ingress.tls.enabled }}
+  https://{{ .Values.ingress.host }}
+  {{- else }}
+  http://{{ .Values.ingress.host }}
+  {{- end }}
+
+Endpoints:
+  - MCP endpoint:     /mcp
+  - Health check:     /healthz
+  - OAuth metadata:   /.well-known/oauth-authorization-server
+
+To connect Claude.ai, add a custom connector with the URL above + /mcp and
+authorize with the password stored in MCP_OAUTH_PASSWORD.
+
+{{- else }}
+Your zenmoney-mcp server is running inside the cluster without an ingress:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "zenmoney-mcp.fullname" . }} 8080:{{ .Values.service.port }}
+
+{{- end }}
+
+NOTE: for the HTTP transport, config.baseURL must match the public URL of the
+server exactly (it is used as the OAuth issuer).

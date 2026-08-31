@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenmoney-mcp.fullname" . }}
+  labels:
+    {{- include "zenmoney-mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "zenmoney-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zenmoney-mcp.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ZENMONEY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "zenmoney-mcp.secretName" . }}
+                  key: ZENMONEY_TOKEN
+            - name: MCP_TRANSPORT
+              value: http
+            - name: HTTP_ADDR
+              value: {{ .Values.config.httpAddr | quote }}
+            {{- if .Values.config.baseURL }}
+            - name: MCP_BASE_URL
+              value: {{ .Values.config.baseURL | quote }}
+            - name: MCP_OAUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "zenmoney-mcp.secretName" . }}
+                  key: MCP_OAUTH_PASSWORD
+            - name: MCP_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "zenmoney-mcp.secretName" . }}
+                  key: MCP_SIGNING_KEY
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

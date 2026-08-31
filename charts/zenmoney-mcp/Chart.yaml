@@ -1,0 +1,21 @@
+apiVersion: v2
+name: zenmoney-mcp
+description: A Model Context Protocol (MCP) server for the ZenMoney personal finance API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - mcp
+  - zenmoney
+  - personal-finance
+  - claude
+  - llm
+home: https://github.com/abrekhov/zenmoney-mcp
+sources:
+  - https://github.com/abrekhov/zenmoney-mcp
+license: MIT
+maintainers:
+  - name: Anton Brekhov
+    email: tony.brekhov@ya.ru
+annotations:
+  artifacthub.io/license: MIT

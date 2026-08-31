@@ -1,0 +1,68 @@
+# Default values for zenmoney-mcp.
+# This is a YAML-formatted file. Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/abrekhov/zenmoney-mcp
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Application configuration.
+config:
+  # Public base URL of the server (required for the HTTP transport used by
+  # Claude.ai), e.g. https://zm.example.com. Leave empty to run in stdio mode.
+  baseURL: ""
+  # Listen address inside the container. If you change the port, update
+  # service.port targetPort accordingly.
+  httpAddr: ":8080"
+
+# Secrets can either be created by this chart (secrets.create=true plus the
+# values below) or referenced from an existing Secret
+# (secrets.existingSecret with keys ZENMONEY_TOKEN, MCP_OAUTH_PASSWORD,
+# MCP_SIGNING_KEY).
+secrets:
+  create: true
+  existingSecret: ""
+  # ZenMoney access token — obtain one via https://zerro.app/token
+  zenmoneyToken: ""
+  # Password shown at the OAuth consent page when a client (e.g. Claude.ai)
+  # connects to your server. Required when config.baseURL is set.
+  oauthPassword: ""
+  # Stable random string (>= 32 chars). Used to sign OAuth tokens; rotating
+  # it invalidates all client sessions. Generate: openssl rand -hex 32
+  signingKey: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  host: zm.example.com
+  tls:
+    enabled: true
+    # cert-manager ClusterIssuer used for the certificate. Leave empty to
+    # manage TLS outside of cert-manager.
+    issuer: letsencrypt-prod
+  # Optional defense-in-depth: comma-separated CIDR list, e.g. "1.2.3.4/32".
+  # Leave empty to rely on the application's OAuth password gate only.
+  ipAllowlist: ""
+
+resources: {}
+  # limits:
+  #   cpu: 200m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 50m
+  #   memory: 32Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
