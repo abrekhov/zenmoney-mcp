@@ -52,12 +52,24 @@ jobs:
           cache-to: type=gha,mode=max
 
   helm:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
+      - name: Determine chart version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # tagged release: chart version = tag (v1.2.3 -> 1.2.3), appVersion follows
+            VERSION="${GITHUB_REF_NAME#v}"
+            sed -i "s/^appVersion:.*/appVersion: \"$VERSION\"/" charts/zenmoney-mcp/Chart.yaml
+          else
+            # main: unique semver prerelease per commit, e.g. 0.1.0-sha.abc1234
+            BASE=$(awk '/^version:/ {print $2}' charts/zenmoney-mcp/Chart.yaml)
+            VERSION="$BASE-sha.${GITHUB_SHA::7}"
+          fi
+          sed -i "s/^version:.*/version: $VERSION/" charts/zenmoney-mcp/Chart.yaml
+          echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Publish chart to GHCR (OCI)
         run: |
           helm registry login ${{ env.REGISTRY }} \
